@@ -8,8 +8,8 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from config import TELEGRAM_BOT_TOKEN
-from news_collector import get_cybersecurity_news, get_madrid_news
-from summarizer import summarize_cybersecurity, summarize_madrid, summarize_all
+from news_collector import get_cybersecurity_news, get_madrid_news, get_news_by_topic
+from summarizer import summarize_cybersecurity, summarize_madrid, summarize_topic, summarize_all
 
 MAX_MSG = 4000
 COOLDOWN = 60
@@ -40,7 +40,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "Comandos:\n"
         "/resumen  - Ciberseguridad + Madrid\n"
         "/cyber    - Solo ciberseguridad\n"
-        "/madrid   - Solo Madrid"
+        "/madrid   - Solo Madrid\n"
+        "/buscar <tema> - Noticias sobre cualquier tema"
     )
 
 
@@ -98,6 +99,27 @@ async def madrid(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await msg.edit_text(part, parse_mode="HTML")
 
 
+async def buscar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    topic = " ".join(context.args) if context.args else ""
+    if not topic:
+        await update.message.reply_text(
+            "Usa: /buscar <tema>\n"
+            "Ejemplo: /buscar Inteligencia Artificial"
+        )
+        return
+    cooldown = _check_cooldown(update.effective_user.id)
+    if cooldown:
+        await update.message.reply_text(cooldown)
+        return
+    _update_cooldown(update.effective_user.id)
+    msg = await update.message.reply_text(f"Buscando noticias de {topic}...")
+    items = await get_news_by_topic(topic)
+    await msg.edit_text("Generando resumen...")
+    text = f"<b>🔍 {topic.upper()}</b>\n" + await summarize_topic(items, topic)
+    for part in _chunk(text):
+        await msg.edit_text(part, parse_mode="HTML")
+
+
 def main() -> None:
     threading.Thread(target=run_health_server, daemon=True).start()
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
@@ -105,6 +127,7 @@ def main() -> None:
     app.add_handler(CommandHandler("resumen", resumen))
     app.add_handler(CommandHandler("cyber", cyber))
     app.add_handler(CommandHandler("madrid", madrid))
+    app.add_handler(CommandHandler("buscar", buscar))
     print("Bot iniciado")
     app.run_polling()
 

@@ -51,3 +51,8 @@ async def get_madrid_news() -> list[dict]:
         if not isinstance(r, Exception):
             items.extend(r)
     return items
+
+
+async def get_news_by_topic(topic: str) -> list[dict]:
+    url = f"https://news.google.com/rss/search?q={topic}&hl=es&gl=ES&ceid=ES:es"
+    return await fetch_feed(url, limit=10)

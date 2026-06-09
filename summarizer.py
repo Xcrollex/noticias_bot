@@ -66,6 +66,12 @@ async def summarize_madrid(news_items: list[dict]) -> str:
     return await _call(_build_prompt(news_items, "Madrid (actualidad)"))
 
 
+async def summarize_topic(news_items: list[dict], topic: str) -> str:
+    if not news_items:
+        return f"No se encontraron noticias de {topic}."
+    return await _call(_build_prompt(news_items, topic))
+
+
 async def summarize_all(cyber_items: list[dict], madrid_items: list[dict]) -> str:
     parts = []
     if cyber_items:
