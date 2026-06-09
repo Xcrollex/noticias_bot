@@ -6,6 +6,7 @@ from config import NVIDIA_API_KEY
 client = AsyncOpenAI(
     api_key=NVIDIA_API_KEY,
     base_url="https://integrate.api.nvidia.com/v1",
+    timeout=30.0,
 )
 MODEL = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
 
@@ -46,7 +47,7 @@ def _build_prompt(news_items: list[dict], topic: str) -> str:
         f"- {item['title']}: {item['summary']}" for item in news_items
     )
     return (
-        f"Resume las siguientes noticias de {topic} en español.\n"
+        f"Resume las siguientes noticias de {topic} de HOY en español.\n"
         f"Formato obligatorio: cada noticia separada por un salto de línea, "
         f"empieza cada titular con ** y termínalo con **.\n"
         f"Cubre unos 4 temas principales. Por cada tema escribe al menos un párrafo "
