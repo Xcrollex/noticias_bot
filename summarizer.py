@@ -4,9 +4,9 @@ from config import OPENROUTER_API_KEY
 
 client = AsyncOpenAI(
     api_key=OPENROUTER_API_KEY,
-    base_url="https://openrouter.ai/api/v1",
+    base_url="https://api.groq.com/openai/v1",
 )
-MODEL = "deepseek/deepseek-v4-flash:free"
+MODEL = "llama-3.3-70b-versatile"
 
 
 async def _call(prompt: str) -> str:
