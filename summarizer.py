@@ -26,9 +26,9 @@ async def _call_gemini(prompt: str) -> str:
             return response.text
         except errors.ClientError as e:
             if "429" in str(e) and attempt < 2:
-                await asyncio.sleep(5 * (attempt + 1))
+                await asyncio.sleep(30)
                 continue
-            return f"Error: límite de API excedido. Espera un momento y vuelve a intentarlo."
+            return "Error: límite de API excedido. Espera un minuto y vuelve a intentarlo."
     return "Error: no se pudo generar el resumen."
 
 
@@ -42,3 +42,15 @@ async def summarize_madrid(news_items: list[dict]) -> str:
     if not news_items:
         return "No se encontraron noticias de Madrid."
     return await _call_gemini(_build_prompt(news_items, "Madrid (actualidad)"))
+
+
+async def summarize_all(cyber_items: list[dict], madrid_items: list[dict]) -> str:
+    parts = []
+    if cyber_items:
+        parts.append(_build_prompt(cyber_items, "ciberseguridad"))
+    if madrid_items:
+        parts.append(_build_prompt(madrid_items, "Madrid (actualidad)"))
+    if not parts:
+        return "No se encontraron noticias."
+    prompt = "\n\n---\n\n".join(parts)
+    return await _call_gemini(prompt)

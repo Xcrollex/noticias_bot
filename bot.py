@@ -9,10 +9,10 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 
 from config import TELEGRAM_BOT_TOKEN
 from news_collector import get_cybersecurity_news, get_madrid_news
-from summarizer import summarize_cybersecurity, summarize_madrid
+from summarizer import summarize_cybersecurity, summarize_madrid, summarize_all
 
 MAX_MSG = 4000
-COOLDOWN = 30
+COOLDOWN = 60
 _last_used: dict[int, float] = defaultdict(float)
 
 
@@ -65,18 +65,8 @@ async def resumen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         get_cybersecurity_news(), get_madrid_news()
     )
     await msg.edit_text("Generando resumen con IA...")
-    tasks = []
-    if cyber_items:
-        tasks.append(summarize_cybersecurity(cyber_items))
-    if madrid_items:
-        tasks.append(summarize_madrid(madrid_items))
-    results = await asyncio.gather(*tasks)
-    final = ""
-    if len(results) > 0:
-        final += "<b>🔒 CIBERSEGURIDAD</b>\n" + results[0] + "\n\n"
-    if len(results) > 1:
-        final += "<b>🏙️ MADRID</b>\n" + results[1]
-    for part in _chunk(final):
+    result = await summarize_all(cyber_items, madrid_items)
+    for part in _chunk(result):
         await msg.edit_text(part, parse_mode="HTML")
 
 
