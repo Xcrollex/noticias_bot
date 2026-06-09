@@ -1,12 +1,12 @@
 import asyncio
 from openai import AsyncOpenAI
-from config import OPENROUTER_API_KEY
+from config import NVIDIA_API_KEY
 
 client = AsyncOpenAI(
-    api_key=OPENROUTER_API_KEY,
-    base_url="https://api.groq.com/openai/v1",
+    api_key=NVIDIA_API_KEY,
+    base_url="https://integrate.api.nvidia.com/v1",
 )
-MODEL = "llama-3.3-70b-versatile"
+MODEL = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
 
 
 async def _call(prompt: str) -> str:
@@ -15,8 +15,17 @@ async def _call(prompt: str) -> str:
             response = await client.chat.completions.create(
                 model=MODEL,
                 messages=[{"role": "user", "content": prompt}],
+                temperature=0.6,
+                top_p=0.95,
+                max_tokens=65536,
+                extra_body={
+                    "chat_template_kwargs": {"enable_thinking": True},
+                    "reasoning_budget": 16384,
+                },
             )
-            return response.choices[0].message.content or ""
+            reasoning = getattr(response.choices[0].message, "reasoning_content", None)
+            content = response.choices[0].message.content or ""
+            return f"{reasoning}\n\n{content}" if reasoning else content
         except Exception as e:
             if "429" in str(e) and attempt < 2:
                 await asyncio.sleep(5 * (attempt + 1))
