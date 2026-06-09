@@ -1,4 +1,6 @@
+import asyncio
 from google import genai
+from google.genai import errors
 from config import GEMINI_API_KEY
 
 client = genai.Client(api_key=GEMINI_API_KEY)
@@ -15,19 +17,28 @@ def _build_prompt(news_items: list[dict], topic: str) -> str:
     )
 
 
+async def _call_gemini(prompt: str) -> str:
+    for attempt in range(3):
+        try:
+            response = await client.aio.models.generate_content(
+                model=MODEL, contents=prompt
+            )
+            return response.text
+        except errors.ClientError as e:
+            if "429" in str(e) and attempt < 2:
+                await asyncio.sleep(5 * (attempt + 1))
+                continue
+            return f"Error: límite de API excedido. Espera un momento y vuelve a intentarlo."
+    return "Error: no se pudo generar el resumen."
+
+
 async def summarize_cybersecurity(news_items: list[dict]) -> str:
     if not news_items:
         return "No se encontraron noticias de ciberseguridad."
-    response = await client.aio.models.generate_content(
-        model=MODEL, contents=_build_prompt(news_items, "ciberseguridad")
-    )
-    return response.text
+    return await _call_gemini(_build_prompt(news_items, "ciberseguridad"))
 
 
 async def summarize_madrid(news_items: list[dict]) -> str:
     if not news_items:
         return "No se encontraron noticias de Madrid."
-    response = await client.aio.models.generate_content(
-        model=MODEL, contents=_build_prompt(news_items, "Madrid (actualidad)")
-    )
-    return response.text
+    return await _call_gemini(_build_prompt(news_items, "Madrid (actualidad)"))

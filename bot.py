@@ -1,6 +1,8 @@
 import asyncio
 import os
+import time
 import threading
+from collections import defaultdict
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
@@ -10,6 +12,8 @@ from news_collector import get_cybersecurity_news, get_madrid_news
 from summarizer import summarize_cybersecurity, summarize_madrid
 
 MAX_MSG = 4000
+COOLDOWN = 30
+_last_used: dict[int, float] = defaultdict(float)
 
 
 class HealthHandler(BaseHTTPRequestHandler):
@@ -40,7 +44,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 
+def _check_cooldown(user_id: int) -> str | None:
+    elapsed = time.time() - _last_used[user_id]
+    if elapsed < COOLDOWN:
+        return f"Espera {int(COOLDOWN - elapsed)}s antes de hacer otra consulta."
+    return None
+
+def _update_cooldown(user_id: int):
+    _last_used[user_id] = time.time()
+
+
 async def resumen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    cooldown = _check_cooldown(update.effective_user.id)
+    if cooldown:
+        await update.message.reply_text(cooldown)
+        return
+    _update_cooldown(update.effective_user.id)
     msg = await update.message.reply_text("Recopilando noticias...")
     cyber_items, madrid_items = await asyncio.gather(
         get_cybersecurity_news(), get_madrid_news()
@@ -62,6 +81,11 @@ async def resumen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def cyber(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    cooldown = _check_cooldown(update.effective_user.id)
+    if cooldown:
+        await update.message.reply_text(cooldown)
+        return
+    _update_cooldown(update.effective_user.id)
     msg = await update.message.reply_text("Recopilando noticias de ciberseguridad...")
     items = await get_cybersecurity_news()
     await msg.edit_text("Generando resumen...")
@@ -71,6 +95,11 @@ async def cyber(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def madrid(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    cooldown = _check_cooldown(update.effective_user.id)
+    if cooldown:
+        await update.message.reply_text(cooldown)
+        return
+    _update_cooldown(update.effective_user.id)
     msg = await update.message.reply_text("Recopilando noticias de Madrid...")
     items = await get_madrid_news()
     await msg.edit_text("Generando resumen...")
