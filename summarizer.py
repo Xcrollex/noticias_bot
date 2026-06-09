@@ -47,9 +47,10 @@ def _build_prompt(news_items: list[dict], topic: str) -> str:
     )
     return (
         f"Resume las siguientes noticias de {topic} en español.\n"
-        f"Formato obligatorio: cada noticia en una línea separada, "
+        f"Formato obligatorio: cada noticia separada por un salto de línea, "
         f"empieza cada titular con ** y termínalo con **.\n"
-        f"Destaca lo más importante. Máximo 3 párrafos, sé conciso:\n\n{texts}"
+        f"Cubre unos 4 temas principales. Por cada tema escribe al menos un párrafo "
+        f"desarrollando los detalles importantes:\n\n{texts}"
     )
 
 
