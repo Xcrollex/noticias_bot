@@ -1,10 +1,9 @@
 import asyncio
-from google import genai
-from google.genai import errors
-from config import GEMINI_API_KEY
+from groq import AsyncGroq
+from config import GROQ_API_KEY
 
-client = genai.Client(api_key=GEMINI_API_KEY)
-MODEL = "gemini-2.0-flash"
+client = AsyncGroq(api_key=GROQ_API_KEY)
+MODEL = "llama-3.3-70b-versatile"
 
 
 def _build_prompt(news_items: list[dict], topic: str) -> str:
@@ -17,31 +16,32 @@ def _build_prompt(news_items: list[dict], topic: str) -> str:
     )
 
 
-async def _call_gemini(prompt: str) -> str:
+async def _call_groq(prompt: str) -> str:
     for attempt in range(3):
         try:
-            response = await client.aio.models.generate_content(
-                model=MODEL, contents=prompt
+            response = await client.chat.completions.create(
+                model=MODEL,
+                messages=[{"role": "user", "content": prompt}],
             )
-            return response.text
-        except errors.ClientError as e:
+            return response.choices[0].message.content or ""
+        except Exception as e:
             if "429" in str(e) and attempt < 2:
-                await asyncio.sleep(30)
+                await asyncio.sleep(5 * (attempt + 1))
                 continue
-            return "Error: límite de API excedido. Espera un minuto y vuelve a intentarlo."
+            return f"Error: {str(e)[:100]}"
     return "Error: no se pudo generar el resumen."
 
 
 async def summarize_cybersecurity(news_items: list[dict]) -> str:
     if not news_items:
         return "No se encontraron noticias de ciberseguridad."
-    return await _call_gemini(_build_prompt(news_items, "ciberseguridad"))
+    return await _call_groq(_build_prompt(news_items, "ciberseguridad"))
 
 
 async def summarize_madrid(news_items: list[dict]) -> str:
     if not news_items:
         return "No se encontraron noticias de Madrid."
-    return await _call_gemini(_build_prompt(news_items, "Madrid (actualidad)"))
+    return await _call_groq(_build_prompt(news_items, "Madrid (actualidad)"))
 
 
 async def summarize_all(cyber_items: list[dict], madrid_items: list[dict]) -> str:
@@ -53,4 +53,4 @@ async def summarize_all(cyber_items: list[dict], madrid_items: list[dict]) -> st
     if not parts:
         return "No se encontraron noticias."
     prompt = "\n\n---\n\n".join(parts)
-    return await _call_gemini(prompt)
+    return await _call_groq(prompt)
