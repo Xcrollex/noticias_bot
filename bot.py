@@ -12,7 +12,7 @@ from news_collector import get_cybersecurity_news, get_madrid_news, get_news_by_
 from summarizer import summarize_cybersecurity, summarize_madrid, summarize_topic, summarize_all
 
 MAX_MSG = 4000
-COOLDOWN = 60
+COOLDOWN = 30
 _last_used: dict[int, float] = defaultdict(float)
 
 

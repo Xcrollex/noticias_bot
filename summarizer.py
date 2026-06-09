@@ -6,7 +6,6 @@ from config import NVIDIA_API_KEY
 client = AsyncOpenAI(
     api_key=NVIDIA_API_KEY,
     base_url="https://integrate.api.nvidia.com/v1",
-    timeout=30.0,
 )
 MODEL = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
 
