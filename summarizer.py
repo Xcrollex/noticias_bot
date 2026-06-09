@@ -37,7 +37,7 @@ async def _call(prompt: str) -> str:
             if "429" in str(e) and attempt < 2:
                 await asyncio.sleep(5 * (attempt + 1))
                 continue
-            return f"Error: {str(e)[:100]}"
+            return f"Error de IA: {str(e)[:100]}"
     return "Error: no se pudo generar el resumen."
 
 
