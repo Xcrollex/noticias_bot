@@ -1,4 +1,5 @@
 import asyncio
+import re
 from openai import AsyncOpenAI
 from config import NVIDIA_API_KEY
 
@@ -7,6 +8,12 @@ client = AsyncOpenAI(
     base_url="https://integrate.api.nvidia.com/v1",
 )
 MODEL = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+
+
+def _html(text: str) -> str:
+    text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
+    text = re.sub(r'\*(.+?)\*', r'<i>\1</i>', text)
+    return text
 
 
 async def _call(prompt: str) -> str:
@@ -25,7 +32,7 @@ async def _call(prompt: str) -> str:
             )
             reasoning = getattr(response.choices[0].message, "reasoning_content", None)
             content = response.choices[0].message.content or ""
-            return f"{reasoning}\n\n{content}" if reasoning else content
+            return _html(content)
         except Exception as e:
             if "429" in str(e) and attempt < 2:
                 await asyncio.sleep(5 * (attempt + 1))
@@ -39,7 +46,9 @@ def _build_prompt(news_items: list[dict], topic: str) -> str:
         f"- {item['title']}: {item['summary']}" for item in news_items
     )
     return (
-        f"Resume las siguientes noticias de {topic} en español. "
+        f"Resume las siguientes noticias de {topic} en español.\n"
+        f"Formato obligatorio: cada noticia en una línea separada, "
+        f"empieza cada titular con ** y termínalo con **.\n"
         f"Destaca lo más importante. Máximo 3 párrafos, sé conciso:\n\n{texts}"
     )
 

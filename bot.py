@@ -79,7 +79,7 @@ async def cyber(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     msg = await update.message.reply_text("Recopilando noticias de ciberseguridad...")
     items = await get_cybersecurity_news()
     await msg.edit_text("Generando resumen...")
-    text = "<b>🔒 CIBERSEGURIDAD</b>\n" + await summarize_cybersecurity(items)
+    text = "<b>🛡️ CIBERSEGURIDAD</b>\n" + await summarize_cybersecurity(items)
     for part in _chunk(text):
         await msg.edit_text(part, parse_mode="HTML")
 
