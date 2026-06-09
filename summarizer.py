@@ -1,8 +1,8 @@
-import google.generativeai as genai
+from google import genai
 from config import GEMINI_API_KEY
 
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-2.0-flash")
+client = genai.Client(api_key=GEMINI_API_KEY)
+MODEL = "gemini-2.0-flash"
 
 
 def _build_prompt(news_items: list[dict], topic: str) -> str:
@@ -18,14 +18,16 @@ def _build_prompt(news_items: list[dict], topic: str) -> str:
 async def summarize_cybersecurity(news_items: list[dict]) -> str:
     if not news_items:
         return "No se encontraron noticias de ciberseguridad."
-    return (await model.generate_content_async(
-        _build_prompt(news_items, "ciberseguridad")
-    )).text
+    response = await client.aio.models.generate_content(
+        model=MODEL, contents=_build_prompt(news_items, "ciberseguridad")
+    )
+    return response.text
 
 
 async def summarize_madrid(news_items: list[dict]) -> str:
     if not news_items:
         return "No se encontraron noticias de Madrid."
-    return (await model.generate_content_async(
-        _build_prompt(news_items, "Madrid (actualidad)")
-    )).text
+    response = await client.aio.models.generate_content(
+        model=MODEL, contents=_build_prompt(news_items, "Madrid (actualidad)")
+    )
+    return response.text
